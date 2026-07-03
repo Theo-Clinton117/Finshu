@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="supabase-config.js"></script>
     <script defer src="script.js"></script>
   </head>
@@ -103,6 +104,7 @@
               </label>
               <button class="button primary" type="button" data-scan-qr>Scan receiver QR</button>
               <div class="scanner-box" data-scanner-box hidden>
+                <div id="qr-reader" data-qr-reader></div>
                 <video data-scanner-video playsinline muted></video>
                 <div class="scanner-actions">
                   <button class="button secondary small-button" type="button" data-stop-scan>Stop scan</button>

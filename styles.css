@@ -1029,6 +1029,26 @@ button.choice-card {
   object-fit: cover;
 }
 
+.scanner-box video[hidden] {
+  display: none;
+}
+
+.scanner-box #qr-reader {
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 10px;
+  background: #000000;
+}
+
+.scanner-box #qr-reader video {
+  border-radius: 10px;
+}
+
+.scanner-box #qr-reader__dashboard_section_csr,
+.scanner-box #qr-reader__dashboard_section_swaplink {
+  display: none !important;
+}
+
 .scanner-actions {
   display: flex;
   justify-content: flex-end;
@@ -1158,6 +1178,7 @@ button.choice-card {
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 14px;
+    backdrop-filter: none;
   }
 
   .sidebar-toggle {
@@ -1214,6 +1235,7 @@ button.choice-card {
     margin: 0;
     padding: 10px;
     border-radius: 0;
+    backdrop-filter: none;
   }
 
   .brand {

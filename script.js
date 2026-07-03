@@ -17,6 +17,7 @@ const supabaseClient = window.supabase
 let pendingTransfer = null;
 let scannerStream = null;
 let scannerTimer = null;
+let html5QrScanner = null;
 const PROTOTYPE_STARTING_BALANCE = 5000;
 
 function setActiveForm(targetId) {
@@ -275,6 +276,13 @@ function parseWalletPayload(rawValue) {
 }
 
 function stopCameraScanner() {
+  if (html5QrScanner) {
+    html5QrScanner.stop().catch(() => {}).finally(() => {
+      html5QrScanner?.clear?.();
+      html5QrScanner = null;
+    });
+  }
+
   if (scannerTimer) {
     clearInterval(scannerTimer);
     scannerTimer = null;
@@ -287,7 +295,9 @@ function stopCameraScanner() {
 
   const scannerBox = document.querySelector('[data-scanner-box]');
   const video = document.querySelector('[data-scanner-video]');
+  const qrReader = document.querySelector('[data-qr-reader]');
   if (video) video.srcObject = null;
+  if (qrReader) qrReader.innerHTML = '';
   if (scannerBox) scannerBox.hidden = true;
 }
 
@@ -427,6 +437,7 @@ function initPeerTransfers() {
   const manualCodeInput = document.querySelector('[data-manual-wallet-code]');
   const scannerBox = document.querySelector('[data-scanner-box]');
   const scannerVideo = document.querySelector('[data-scanner-video]');
+  const qrReader = document.querySelector('[data-qr-reader]');
   const stopScanButton = document.querySelector('[data-stop-scan]');
   const confirmButton = document.querySelector('[data-transfer-confirm]');
   const cancelButtons = document.querySelectorAll('[data-transfer-cancel]');
@@ -497,6 +508,58 @@ function initPeerTransfers() {
     }
   };
 
+  const startHtml5QrScanner = async () => {
+    if (!window.Html5Qrcode || !qrReader) return false;
+
+    if (scannerVideo) scannerVideo.hidden = true;
+    if (scannerBox) scannerBox.hidden = false;
+    qrReader.innerHTML = '';
+    html5QrScanner = new window.Html5Qrcode(qrReader.id);
+
+    await html5QrScanner.start(
+      { facingMode: 'environment' },
+      {
+        fps: 10,
+        qrbox: { width: 220, height: 220 },
+        aspectRatio: 1
+      },
+      (decodedText) => {
+        handleScannedValue(decodedText);
+      }
+    );
+
+    return true;
+  };
+
+  const startNativeBarcodeScanner = async () => {
+    if (scannerVideo) scannerVideo.hidden = false;
+    if (scannerBox) scannerBox.hidden = false;
+
+    const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'environment'
+      },
+      audio: false
+    });
+
+    if (scannerVideo) {
+      scannerVideo.srcObject = scannerStream;
+      await scannerVideo.play();
+    }
+
+    scannerTimer = setInterval(async () => {
+      if (!scannerVideo || scannerVideo.readyState < 2) return;
+      try {
+        const codes = await detector.detect(scannerVideo);
+        const qrValue = codes[0]?.rawValue;
+        if (qrValue) handleScannedValue(qrValue);
+      } catch {
+        // Keep the scanner running; individual frame failures are common.
+      }
+    }, 450);
+  };
+
   scanButton.onclick = async () => {
     const amount = Number(amountInput?.value || 0);
     if (!amount || amount <= 0) {
@@ -515,44 +578,24 @@ function initPeerTransfers() {
       return;
     }
 
-    if (!('BarcodeDetector' in window)) {
-      if (status) {
-        status.className = 'form-status error';
-        status.textContent = 'This browser cannot scan QR codes directly. Paste the wallet code below.';
-      }
-      return;
-    }
-
     try {
-      const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-      scannerStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment'
-        },
-        audio: false
-      });
-
-      if (scannerBox) scannerBox.hidden = false;
-      if (scannerVideo) {
-        scannerVideo.srcObject = scannerStream;
-        await scannerVideo.play();
-      }
-
       if (status) {
         status.className = 'form-status loading';
         status.textContent = 'Camera is scanning for a FinShu QR code.';
       }
 
-      scannerTimer = setInterval(async () => {
-        if (!scannerVideo || scannerVideo.readyState < 2) return;
-        try {
-          const codes = await detector.detect(scannerVideo);
-          const qrValue = codes[0]?.rawValue;
-          if (qrValue) handleScannedValue(qrValue);
-        } catch {
-          // Keep the scanner running; individual frame failures are common.
+      const startedLibraryScanner = await startHtml5QrScanner();
+      if (!startedLibraryScanner) {
+        if (!('BarcodeDetector' in window)) {
+          if (status) {
+            status.className = 'form-status error';
+            status.textContent = 'This browser cannot scan QR codes directly. Paste the wallet code below.';
+          }
+          return;
         }
-      }, 450);
+
+        await startNativeBarcodeScanner();
+      }
     } catch (error) {
       stopCameraScanner();
       if (status) {
