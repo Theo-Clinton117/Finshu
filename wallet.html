@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinShu | Wallet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="supabase-config.js"></script>
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <div class="page-shell wallet-shell">
+      <header class="topbar">
+        <a class="brand" href="index.html">
+          <img class="logo" src="Images/logo.png" alt="FinShu logo" />
+          FinShu
+        </a>
+        <button class="sidebar-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="top-right">
+          <nav class="nav-links">
+            <a href="signup.html">Sign Up</a>
+            <a href="index.html">Home</a>
+            <button class="button secondary small-button" id="sign-out-button" type="button">Sign out</button>
+          </nav>
+          <button class="theme-toggle" type="button" aria-label="Toggle dark mode">Dark mode</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="wallet-grid">
+          <div class="wallet-card">
+            <div class="wallet-card-top">
+              <div>
+                <p class="mini-label">FinShu wallet</p>
+                <div class="auth-badge">Signed in</div>
+                <h1 data-user-name>FinShu commuter</h1>
+              </div>
+              <span class="status-pill" data-user-role>Commuter account</span>
+            </div>
+            <div class="balance-row">
+              <span class="balance-amount" data-balance-value>&#8358;0.00</span>
+              <button class="icon-button" type="button" data-balance-toggle aria-label="Hide balance">Hide</button>
+            </div>
+            <p class="mini-copy" data-wallet-status>Balance is visible and ready for transfers.</p>
+            <div class="wallet-card-meta">
+              <div class="chip">NFC ready</div>
+              <div class="placeholder-card">
+                <div>
+                  <p class="mini-label">Wallet ID</p>
+                  <h3 data-wallet-id>Generating...</h3>
+                  <p>Your unique FinShu identifier appears here after sign up or sign in.</p>
+                </div>
+              </div>
+            </div>
+            <div class="wallet-card-footer">
+              <button class="button secondary" type="button" data-nfc-action>Pair NFC card</button>
+              <a class="button secondary" href="index.html">Home</a>
+              <p class="mini-copy" data-nfc-status>Next step: connect your campus transit card.</p>
+            </div>
+          </div>
+
+          <aside class="wallet-list-card wallet-summary-card">
+            <p class="eyebrow">Account</p>
+            <h3>Wallet access</h3>
+            <p class="mini-copy">Confirm your wallet ID, receive payments, and send QR transfers.</p>
+          </aside>
+        </section>
+
+        <section class="transfer-section" aria-label="Peer to peer QR transfer">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">QR transfers</p>
+            <h2>Send money by scanning a wallet code.</h2>
+          </div>
+
+          <div class="transfer-grid">
+            <article class="transfer-card receive-card">
+              <div>
+                <p class="mini-label">Receive</p>
+                <h3>Your QR code</h3>
+                <p class="mini-copy">Show this code to another FinShu user so they can start a transfer.</p>
+              </div>
+              <div class="qr-code" data-receive-qr aria-label="Wallet QR code"></div>
+              <p class="wallet-code" data-receive-code>Generating...</p>
+            </article>
+
+            <article class="transfer-card send-card">
+              <p class="mini-label">Send</p>
+              <h3>Scan and pay</h3>
+              <label class="field">
+                <span>Amount</span>
+                <input data-transfer-amount type="number" min="1" step="50" placeholder="250" />
+              </label>
+              <label class="field">
+                <span>Note</span>
+                <input data-transfer-note type="text" maxlength="40" placeholder="Ride fare" />
+              </label>
+              <button class="button primary" type="button" data-scan-qr>Scan receiver QR</button>
+              <div class="scanner-box" data-scanner-box hidden>
+                <video data-scanner-video playsinline muted></video>
+                <div class="scanner-actions">
+                  <button class="button secondary small-button" type="button" data-stop-scan>Stop scan</button>
+                </div>
+              </div>
+              <label class="field manual-code">
+                <span>Manual wallet code</span>
+                <input data-manual-wallet-code type="text" placeholder="Paste scanned wallet code" />
+              </label>
+              <button class="button secondary" type="button" data-manual-scan>Use wallet code</button>
+              <p class="form-status" data-transfer-status aria-live="polite"></p>
+            </article>
+
+            <article class="transfer-card history-card">
+              <p class="mini-label">Activity</p>
+              <h3>Recent transfers</h3>
+              <div class="transfer-history" data-transfer-history>
+                <p class="mini-copy">No transfers yet.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <aside class="transfer-panel" data-transfer-panel aria-hidden="true">
+        <button class="panel-close" type="button" data-transfer-cancel aria-label="Close transfer confirmation">Close</button>
+        <p class="eyebrow">Confirm transfer</p>
+        <h2 data-confirm-amount>&#8358;0.00</h2>
+        <p class="mini-copy">To <strong data-confirm-recipient>Recipient</strong></p>
+        <p class="mini-copy" data-confirm-note></p>
+        <div class="panel-actions">
+          <button class="button primary" type="button" data-transfer-confirm>Confirm and send</button>
+          <button class="button secondary" type="button" data-transfer-cancel>Cancel</button>
+        </div>
+      </aside>
+    </div>
+  </body>
+</html>

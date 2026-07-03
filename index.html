@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinShu | Campus Transport Payments</title>
+    <meta
+      name="description"
+      content="FinShu helps commuters and drivers make fast campus transport payments with wallets, QR transfers, and NFC cards."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="supabase-config.js"></script>
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#">
+          <img class="logo" src="Images/logo.png" alt="FinShu logo" />
+          FinShu
+        </a>
+        <button class="sidebar-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="top-right">
+          <nav class="nav-links">
+            <a href="signup.html">Sign Up</a>
+            <a href="wallet.html">Wallet</a>
+            <a href="#how">How It Works</a>
+          </nav>
+          <button class="theme-toggle" type="button" aria-label="Toggle dark mode">Dark mode</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero lean-hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Campus mobility payments</p>
+            <h1>Pay, receive, and move around campus without cash.</h1>
+            <p class="hero-text">
+              FinShu gives commuters and drivers a wallet for quick QR transfers, NFC card pairing,
+              and simple transport payments.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="signup.html">Create your account</a>
+              <a class="button secondary" href="wallet.html">Open wallet</a>
+            </div>
+            <ul class="hero-points">
+              <li>Every prototype wallet starts with &#8358;5,000</li>
+              <li>Send money by scanning a receiver QR code</li>
+              <li>Prepare for NFC card payments</li>
+            </ul>
+          </div>
+
+          <div class="hero-card home-wallet-card" aria-label="FinShu wallet preview">
+            <div class="card-body">
+              <p class="mini-label">Wallet preview</p>
+              <h3>&#8358;5,000</h3>
+              <p class="mini-copy">Prototype balance for testing transfers and wallet flows.</p>
+              <div class="home-flow-list">
+                <span>Create account</span>
+                <span>Open wallet</span>
+                <span>Scan QR</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="how" class="section split-section compact-home-section">
+          <div>
+            <p class="eyebrow">How it works</p>
+            <h2>A simple payment flow for campus transport.</h2>
+            <p class="section-text">
+              Create an account, open your wallet, scan a receiver QR code, and confirm the transfer.
+            </p>
+          </div>
+          <div class="benefit-list">
+            <div>
+              <strong>Commuters</strong>
+              <p>Use the wallet for QR transfers and future NFC card payments.</p>
+            </div>
+            <div>
+              <strong>Drivers</strong>
+              <p>Receive wallet payments and keep transport transactions traceable.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

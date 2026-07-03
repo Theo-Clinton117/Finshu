@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinShu | Sign Up</title>
+    <meta
+      name="description"
+      content="Create a FinShu commuter or driver account for campus transport payments in Nigeria."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <div class="page-shell signup-shell">
+      <header class="topbar">
+        <a class="brand" href="index.html">
+          <img class="logo" src="Images/logo.png" alt="FinShu logo" />
+          FinShu
+        </a>
+        <button class="sidebar-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="top-right">
+          <nav class="nav-links">
+            <a href="index.html">Back to home</a>
+          </nav>
+          <button class="theme-toggle" type="button" aria-label="Toggle dark mode">Dark mode</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="signup-hero">
+          <p class="eyebrow">Create account</p>
+          <h1>Choose the onboarding path that fits your role.</h1>
+          <p class="hero-text">
+            FinShu supports two onboarding journeys: commuters can start with a wallet and NFC card,
+            while drivers can begin with a transport terminal profile and vehicle verification.
+            After account creation, you will continue to your wallet preview.
+          </p>
+        </section>
+
+        <section class="choice-grid" aria-label="Account type selection">
+          <button class="choice-card toggle-card active" type="button" data-target="commuter-form">
+            <span class="toggle-badge">Commuter</span>
+            <h3>Commuter sign up</h3>
+            <p class="form-note">Wallet onboarding, campus travel access, and tap-to-pay convenience.</p>
+          </button>
+
+          <button class="choice-card toggle-card" type="button" data-target="driver-form">
+            <span class="toggle-badge">Driver</span>
+            <h3>Driver sign up</h3>
+            <p class="form-note">Driver verification, vehicle info, and terminal-ready settlement setup.</p>
+          </button>
+        </section>
+
+        <section class="form-panel">
+          <article class="choice-card signin-card">
+            <h3>Sign in</h3>
+            <p class="form-note">Returning users can sign in here and continue to their wallet.</p>
+            <form class="auth-form" data-role="commuter" data-auth-mode="signin">
+              <div class="field">
+                <label for="signin-email">Email address</label>
+                <input id="signin-email" name="email" type="email" placeholder="you@example.com" required />
+              </div>
+              <div class="field">
+                <label for="signin-password">Password</label>
+                <input id="signin-password" name="password" type="password" placeholder="Enter your password" minlength="6" required />
+              </div>
+              <div class="form-status" aria-live="polite"></div>
+              <button class="button primary" type="submit">Sign in</button>
+            </form>
+          </article>
+
+          <article id="commuter-form" class="choice-card form-card">
+            <h3>Commuter sign up</h3>
+            <p class="form-note">Requirements: full name, university email or matriculation number, phone number, and a secure password or PIN.</p>
+            <form class="auth-form" data-role="commuter">
+              <div class="field">
+                <label for="commuter-name">Full name</label>
+                <input id="commuter-name" name="fullName" type="text" placeholder="Ada Okafor" required />
+              </div>
+              <div class="field">
+                <label for="commuter-email">Email address</label>
+                <input id="commuter-email" name="email" type="email" placeholder="you@university.edu.ng" required />
+              </div>
+              <div class="field">
+                <label for="commuter-phone">Phone number</label>
+                <input id="commuter-phone" name="phone" type="tel" placeholder="0803 000 0000" />
+              </div>
+              <div class="field">
+                <label for="commuter-password">Password</label>
+                <input id="commuter-password" name="password" type="password" placeholder="Create a secure password" minlength="6" required />
+              </div>
+              <div class="form-status" aria-live="polite"></div>
+              <button class="button primary" type="submit">Create commuter account</button>
+            </form>
+          </article>
+
+          <article id="driver-form" class="choice-card form-card">
+            <h3>Driver sign up</h3>
+            <p class="form-note">Requirements: full name, phone number, date of birth, government-issued ID, vehicle registration number, vehicle type, and driver's licence number.</p>
+            <form class="auth-form" data-role="driver">
+              <div class="field">
+                <label for="driver-name">Full name</label>
+                <input id="driver-name" name="fullName" type="text" placeholder="Bello Musa" required />
+              </div>
+              <div class="field">
+                <label for="driver-email">Email address</label>
+                <input id="driver-email" name="email" type="email" placeholder="you@transport.ng" required />
+              </div>
+              <div class="field">
+                <label for="driver-phone">Phone number</label>
+                <input id="driver-phone" name="phone" type="tel" placeholder="0703 000 0000" />
+              </div>
+              <div class="field">
+                <label for="driver-password">Password</label>
+                <input id="driver-password" name="password" type="password" placeholder="Create a secure password" minlength="6" required />
+              </div>
+              <div class="field">
+                <label for="driver-dob">Date of birth</label>
+                <input id="driver-dob" name="dob" type="date" />
+              </div>
+              <div class="field">
+                <label for="driver-id">Government-issued ID</label>
+                <input id="driver-id" name="governmentId" type="text" placeholder="National ID / passport" />
+              </div>
+              <div class="field">
+                <label for="driver-vehicle">Vehicle registration number</label>
+                <input id="driver-vehicle" name="vehicleRegistration" type="text" placeholder="ABC 123 XY" />
+              </div>
+              <div class="field">
+                <label for="driver-type">Vehicle type</label>
+                <select id="driver-type" name="vehicleType">
+                  <option>Bus</option>
+                  <option>Taxi</option>
+                  <option>Shuttle</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="driver-license">Driver's licence number</label>
+                <input id="driver-license" name="licenseNumber" type="text" placeholder="Licence number" />
+              </div>
+              <div class="form-status" aria-live="polite"></div>
+              <button class="button primary" type="submit">Create driver account</button>
+            </form>
+          </article>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
