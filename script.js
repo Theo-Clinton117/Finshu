@@ -1,9 +1,9 @@
 const toggleButtons = document.querySelectorAll('.toggle-card');
 const formCards = document.querySelectorAll('.form-card');
 const authForms = document.querySelectorAll('.auth-form');
-const themeToggle = document.querySelector('.theme-toggle');
-const sidebarToggle = document.querySelector('.sidebar-toggle');
-const topRight = document.querySelector('.top-right');
+const themeToggles = document.querySelectorAll('.theme-toggle');
+const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
+const sidebars = document.querySelectorAll('.top-right');
 const supabaseConfig = window.SUPABASE_CONFIG || {};
 const supabaseClient = window.supabase
   ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey, {
@@ -33,9 +33,10 @@ function setActiveForm(targetId) {
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('finshu-theme', theme);
-  if (themeToggle) {
-    themeToggle.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
-  }
+  themeToggles.forEach((toggle) => {
+    toggle.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+    toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  });
 }
 
 function initTheme() {
@@ -44,32 +45,43 @@ function initTheme() {
 }
 
 function initMobileSidebar() {
-  if (!sidebarToggle || !topRight) return;
+  if (!sidebarToggles.length || !sidebars.length) return;
 
   const closeSidebar = () => {
     document.body.classList.remove('sidebar-open');
-    sidebarToggle.setAttribute('aria-expanded', 'false');
+    sidebarToggles.forEach((toggle) => toggle.setAttribute('aria-expanded', 'false'));
   };
 
-  sidebarToggle.addEventListener('click', () => {
-    const isOpen = document.body.classList.toggle('sidebar-open');
-    sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+  sidebarToggles.forEach((toggle) => {
+    toggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = document.body.classList.toggle('sidebar-open');
+      sidebarToggles.forEach((button) => button.setAttribute('aria-expanded', String(isOpen)));
+    });
   });
 
   document.addEventListener('click', (event) => {
     if (!document.body.classList.contains('sidebar-open')) return;
-    if (topRight.contains(event.target) || sidebarToggle.contains(event.target)) return;
+    const clickedSidebar = Array.from(sidebars).some((sidebar) => sidebar.contains(event.target));
+    const clickedToggle = Array.from(sidebarToggles).some((toggle) => toggle.contains(event.target));
+    if (clickedSidebar || clickedToggle) return;
     closeSidebar();
   });
 
-  topRight.querySelectorAll('a, button').forEach((item) => {
-    item.addEventListener('click', () => {
-      if (item !== sidebarToggle) closeSidebar();
+  sidebars.forEach((sidebar) => {
+    sidebar.querySelectorAll('a, button').forEach((item) => {
+      item.addEventListener('click', () => {
+        closeSidebar();
+      });
     });
   });
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeSidebar();
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 680) closeSidebar();
   });
 }
 
@@ -817,10 +829,12 @@ async function handleAuthSubmit(event) {
   window.location.href = 'wallet.html';
 }
 
-if (themeToggle) {
-  themeToggle.addEventListener('click', () => {
+if (themeToggles.length) {
+  themeToggles.forEach((toggle) => {
+    toggle.addEventListener('click', () => {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
   });
 }
 
