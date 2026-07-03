@@ -4,6 +4,7 @@ const authForms = document.querySelectorAll('.auth-form');
 const themeToggles = document.querySelectorAll('.theme-toggle');
 const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
 const sidebars = document.querySelectorAll('.top-right');
+const logoImages = document.querySelectorAll('.logo');
 const supabaseConfig = window.SUPABASE_CONFIG || {};
 const supabaseClient = window.supabase
   ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey, {
@@ -34,6 +35,9 @@ function setActiveForm(targetId) {
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('finshu-theme', theme);
+  logoImages.forEach((logo) => {
+    logo.src = theme === 'dark' ? 'Images/logo-dark mode.png' : 'Images/logo.png';
+  });
   themeToggles.forEach((toggle) => {
     toggle.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
     toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
