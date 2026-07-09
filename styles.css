@@ -1083,23 +1083,42 @@ button.choice-card {
   color: var(--text);
 }
 
+.transfer-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(7, 18, 15, 0.56);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.transfer-panel-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .transfer-panel {
   position: fixed;
   top: 50%;
-  right: 18px;
+  left: 50%;
   z-index: 30;
-  width: min(340px, calc(100vw - 36px));
+  width: min(360px, calc(100vw - 36px));
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--panel);
   box-shadow: var(--shadow);
-  transform: translate(120%, -50%);
-  transition: transform 220ms ease;
+  transform: translate(-50%, -50%) scale(0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 220ms ease, opacity 220ms ease;
 }
 
 .transfer-panel.open {
-  transform: translate(0, -50%);
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .transfer-panel h2 {
@@ -1212,7 +1231,8 @@ button.choice-card {
     transform: translateX(0);
   }
 
-  body.sidebar-open {
+body.sidebar-open,
+body.transfer-panel-open {
     overflow: hidden;
   }
 

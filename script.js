@@ -20,6 +20,7 @@ let scannerStream = null;
 let scannerTimer = null;
 let html5QrScanner = null;
 let currentPaymentRequest = null;
+let scanHandled = false;
 const PROTOTYPE_STARTING_BALANCE = 5000;
 
 function setActiveForm(targetId) {
@@ -551,9 +552,18 @@ function renderTransferHistory() {
 
 function setTransferPanel(open) {
   const panel = document.querySelector('[data-transfer-panel]');
+  const backdrop = document.querySelector('[data-transfer-backdrop]');
   if (!panel) return;
+
   panel.classList.toggle('open', open);
   panel.setAttribute('aria-hidden', String(!open));
+
+  if (backdrop) {
+    backdrop.classList.toggle('open', open);
+    backdrop.setAttribute('aria-hidden', String(!open));
+  }
+
+  document.body.classList.toggle('transfer-panel-open', open);
 }
 
 function initPeerTransfers() {
@@ -632,10 +642,11 @@ function initPeerTransfers() {
 
   const handleScannedValue = (rawValue) => {
     const parsedWallet = parseWalletPayload(rawValue);
-    if (parsedWallet) {
-      stopCameraScanner();
-      openConfirmation(parsedWallet);
-    }
+    if (!parsedWallet || scanHandled) return;
+
+    scanHandled = true;
+    stopCameraScanner();
+    openConfirmation(parsedWallet);
   };
 
   const startHtml5QrScanner = async () => {
@@ -713,6 +724,9 @@ function initPeerTransfers() {
   }
 
   scanButton.onclick = async () => {
+    scanHandled = false;
+    setTransferPanel(false);
+
     if (!navigator.mediaDevices?.getUserMedia) {
       if (status) {
         status.className = 'form-status error';
@@ -764,6 +778,7 @@ function initPeerTransfers() {
   }
 
   stopScanButton.onclick = () => {
+    scanHandled = false;
     stopCameraScanner();
     if (status) {
       status.className = 'form-status';
@@ -812,6 +827,7 @@ function initPeerTransfers() {
 
     confirmButton.disabled = false;
     pendingTransfer = null;
+    scanHandled = false;
     setTransferPanel(false);
     renderWalletState();
     renderTransferHistory();
@@ -820,6 +836,7 @@ function initPeerTransfers() {
   cancelButtons.forEach((button) => {
     button.onclick = () => {
       pendingTransfer = null;
+      scanHandled = false;
       stopCameraScanner();
       setTransferPanel(false);
     };
