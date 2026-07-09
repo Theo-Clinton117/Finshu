@@ -19,6 +19,7 @@ let pendingTransfer = null;
 let scannerStream = null;
 let scannerTimer = null;
 let html5QrScanner = null;
+let currentPaymentRequest = null;
 const PROTOTYPE_STARTING_BALANCE = 5000;
 
 function setActiveForm(targetId) {
@@ -214,6 +215,23 @@ function syncWalletFromSession() {
 function drawQrCode(container, payload) {
   if (!container) return;
 
+  if (window.QRious) {
+    container.innerHTML = '';
+    container.classList.add('is-real-qr');
+    const canvas = document.createElement('canvas');
+    canvas.width = 174;
+    canvas.height = 174;
+    container.appendChild(canvas);
+    new QRious({
+      element: canvas,
+      value: payload,
+      size: 174,
+      background: '#ffffff',
+      foreground: '#07120f'
+    });
+    return;
+  }
+
   if (window.QRCode?.toCanvas) {
     container.innerHTML = '';
     container.classList.add('is-real-qr');
@@ -258,25 +276,130 @@ function drawQrCode(container, payload) {
   }
 }
 
+function generateTransactionId() {
+  const suffix = Math.random().toString(36).slice(2, 10).toUpperCase();
+  return `TX${Date.now().toString().slice(-6)}${suffix}`;
+}
+
 function parseWalletPayload(rawValue) {
   if (!rawValue) return null;
 
   try {
     const parsed = JSON.parse(rawValue);
+    if (parsed?.type === 'finshu-request' && parsed.recipient) {
+      return {
+        walletId: String(parsed.recipient),
+        recipient: parsed.name || 'FinShu user',
+        amount: typeof parsed.amount === 'number' && parsed.amount > 0 ? parsed.amount : null,
+        txid: parsed.txid || null,
+        timestamp: parsed.timestamp || null,
+        isRequest: true
+      };
+    }
+
     if (parsed?.type === 'finshu-wallet' && parsed.walletId) {
       return {
         walletId: String(parsed.walletId),
-        recipient: parsed.displayName || 'FinShu user'
+        recipient: parsed.displayName || 'FinShu user',
+        amount: null,
+        txid: null,
+        timestamp: null,
+        isRequest: false
       };
     }
   } catch {
     return {
       walletId: String(rawValue).trim(),
-      recipient: 'FinShu user'
+      recipient: 'FinShu user',
+      amount: null,
+      txid: null,
+      timestamp: null,
+      isRequest: false
     };
   }
 
   return null;
+}
+
+function buildPaymentRequestPayload() {
+  const walletId = getLocalWalletId();
+  const displayName = getLocalDisplayName();
+  const amountField = document.querySelector('[data-request-amount]');
+  const amountValue = Number(amountField?.value || 0);
+  const payload = {
+    type: 'finshu-request',
+    recipient: walletId,
+    name: displayName,
+    txid: generateTransactionId(),
+    timestamp: new Date().toISOString()
+  };
+
+  if (amountValue > 0) {
+    payload.amount = amountValue;
+  }
+
+  return payload;
+}
+
+function refreshPaymentRequest() {
+  const qrTarget = document.querySelector('[data-receive-qr]');
+  const receiveCode = document.querySelector('[data-receive-code]');
+  currentPaymentRequest = buildPaymentRequestPayload();
+  const payloadText = JSON.stringify(currentPaymentRequest);
+  drawQrCode(qrTarget, payloadText);
+  if (receiveCode) {
+    receiveCode.textContent = currentPaymentRequest.recipient;
+  }
+  return currentPaymentRequest;
+}
+
+function getLocalReceivedRequests() {
+  try {
+    return JSON.parse(localStorage.getItem('finshu-received-requests') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function markRequestAsReceived(txid) {
+  const requests = getLocalReceivedRequests();
+  if (!txid) return;
+  if (!requests.includes(txid)) {
+    requests.push(txid);
+    localStorage.setItem('finshu-received-requests', JSON.stringify(requests));
+  }
+}
+
+function hasReceivedRequest(txid) {
+  return getLocalReceivedRequests().includes(txid);
+}
+
+function receivePaymentLocally() {
+  const request = currentPaymentRequest;
+  if (!request || !request.amount) {
+    return { ok: false, reason: 'No payment amount found on the current request.' };
+  }
+
+  if (hasReceivedRequest(request.txid)) {
+    return { ok: false, reason: 'This payment request has already been received locally.' };
+  }
+
+  const nextBalance = setWalletBalance(getWalletBalance() + request.amount);
+  markRequestAsReceived(request.txid);
+  setTransferHistory([
+    ...getTransferHistory(),
+    {
+      type: 'received_request',
+      amount: request.amount,
+      recipient: request.recipient,
+      walletId: request.walletId,
+      txid: request.txid,
+      status: 'completed',
+      createdAt: new Date().toISOString()
+    }
+  ]);
+
+  return { ok: true, amount: request.amount, balance: nextBalance };
 }
 
 function stopCameraScanner() {
@@ -436,6 +559,8 @@ function setTransferPanel(open) {
 function initPeerTransfers() {
   const qrTarget = document.querySelector('[data-receive-qr]');
   const receiveCode = document.querySelector('[data-receive-code]');
+  const refreshRequestButton = document.querySelector('[data-refresh-request]');
+  const receivePaymentButton = document.querySelector('[data-receive-payment]');
   const scanButton = document.querySelector('[data-scan-qr]');
   const manualScanButton = document.querySelector('[data-manual-scan]');
   const manualCodeInput = document.querySelector('[data-manual-wallet-code]');
@@ -454,19 +579,19 @@ function initPeerTransfers() {
 
   if (!qrTarget || !scanButton) return;
 
-  const walletId = getLocalWalletId();
-  const displayName = getLocalDisplayName();
-  const payload = JSON.stringify({ type: 'finshu-wallet', walletId, displayName });
-  drawQrCode(qrTarget, payload);
-  if (receiveCode) receiveCode.textContent = walletId;
+  refreshPaymentRequest();
+  if (receiveCode && currentPaymentRequest) receiveCode.textContent = currentPaymentRequest.recipient;
   ensureSenderWallet();
 
   const openConfirmation = (targetWallet) => {
-    const amount = Number(amountInput?.value || 0);
+    const requestAmount = targetWallet?.amount;
+    const inputAmount = Number(amountInput?.value || 0);
+    const amount = requestAmount && requestAmount > 0 ? requestAmount : inputAmount;
+
     if (!amount || amount <= 0) {
       if (status) {
         status.className = 'form-status error';
-        status.textContent = 'Enter an amount before scanning.';
+        status.textContent = 'Enter or scan an amount before confirming.';
       }
       return;
     }
@@ -489,9 +614,10 @@ function initPeerTransfers() {
 
     pendingTransfer = {
       amount,
-      note: noteInput?.value.trim() || 'QR transfer',
+      note: noteInput?.value.trim() || (targetWallet.txid ? `Request ${targetWallet.txid}` : 'QR transfer'),
       recipient: targetWallet.recipient || 'FinShu user',
-      walletId: targetWallet.walletId
+      walletId: targetWallet.walletId,
+      txid: targetWallet.txid || null
     };
 
     if (confirmAmount) confirmAmount.textContent = formatCurrency(amount);
@@ -564,22 +690,40 @@ function initPeerTransfers() {
     }, 450);
   };
 
-  scanButton.onclick = async () => {
-    const amount = Number(amountInput?.value || 0);
-    if (!amount || amount <= 0) {
+  if (refreshRequestButton) {
+    refreshRequestButton.onclick = () => {
+      refreshPaymentRequest();
       if (status) {
-        status.className = 'form-status error';
-        status.textContent = 'Enter an amount before scanning.';
+        status.className = 'form-status success';
+        status.textContent = 'Payment request refreshed.';
       }
-      return;
-    }
+    };
+  }
 
+  if (receivePaymentButton) {
+    receivePaymentButton.onclick = () => {
+      const result = receivePaymentLocally();
+      if (status) {
+        status.className = result.ok ? 'form-status success' : 'form-status error';
+        status.textContent = result.ok
+          ? `Payment received locally. Balance updated to ${formatCurrency(result.balance)}.`
+          : result.reason;
+      }
+    };
+  }
+
+  scanButton.onclick = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       if (status) {
         status.className = 'form-status error';
         status.textContent = 'Camera access is not available in this browser.';
       }
       return;
+    }
+
+    if (status) {
+      status.className = 'form-status loading';
+      status.textContent = 'Scan a payment request QR code with your camera.';
     }
 
     try {
@@ -614,6 +758,10 @@ function initPeerTransfers() {
   manualScanButton.onclick = () => {
     handleScannedValue(manualCodeInput?.value.trim());
   };
+
+  if (qrTarget) {
+    refreshPaymentRequest();
+  }
 
   stopScanButton.onclick = () => {
     stopCameraScanner();
@@ -760,6 +908,73 @@ async function handleSignOut() {
   window.location.href = 'signup.html';
 }
 
+async function syncUserProfileToDatabase({ userId, email, role, fullName, phone }) {
+  if (!supabaseClient || !userId) {
+    return { ok: false, reason: 'No authenticated user available.' };
+  }
+
+  try {
+    const { error } = await supabaseClient.from('profiles').upsert({
+      id: userId,
+      email: email || '',
+      full_name: fullName || '',
+      role: role || 'commuter',
+      phone: phone || '',
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+
+    if (error) {
+      return { ok: false, reason: error.message };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: error?.message || 'Profile sync failed.' };
+  }
+}
+
+async function ensureUserWalletRecord({ userId, fullName }) {
+  if (!supabaseClient || !userId) {
+    return { ok: false, reason: 'No authenticated user available.' };
+  }
+
+  try {
+    const walletId = getLocalWalletId();
+    const { data: existingWallet, error: fetchError } = await supabaseClient
+      .from('wallets')
+      .select('*')
+      .eq('wallet_id', walletId)
+      .maybeSingle();
+
+    if (fetchError) {
+      return { ok: false, reason: fetchError.message };
+    }
+
+    if (existingWallet) {
+      return { ok: true, wallet: existingWallet };
+    }
+
+    const { data, error } = await supabaseClient
+      .from('wallets')
+      .insert({
+        wallet_id: walletId,
+        user_id: userId,
+        display_name: fullName || getLocalDisplayName(),
+        balance: PROTOTYPE_STARTING_BALANCE
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { ok: false, reason: error.message };
+    }
+
+    return { ok: true, wallet: data };
+  } catch (error) {
+    return { ok: false, reason: error?.message || 'Wallet sync failed.' };
+  }
+}
+
 function initWalletExperience() {
   renderWalletState();
   const signOutButton = document.getElementById('sign-out-button');
@@ -784,7 +999,11 @@ async function handleAuthSubmit(event) {
   const password = form.querySelector('[name="password"]').value;
 
   if (!supabaseClient) {
-    setFormStatus(form, 'error', 'Authentication is unavailable right now.');
+    setFormStatus(
+      form,
+      'error',
+      'Supabase auth is unavailable. Please confirm the Supabase JS library loaded and your browser has internet access.'
+    );
     return;
   }
 
@@ -828,6 +1047,17 @@ async function handleAuthSubmit(event) {
     }
 
     const resolvedUserId = persistAuthState(email, data.user?.user_metadata?.role || role || 'commuter', data.user?.user_metadata?.full_name || fullName || email.split('@')[0], data.user?.id || null);
+    await syncUserProfileToDatabase({
+      userId: data.user?.id || null,
+      email,
+      role: data.user?.user_metadata?.role || role || 'commuter',
+      fullName: data.user?.user_metadata?.full_name || fullName || email.split('@')[0],
+      phone
+    });
+    await ensureUserWalletRecord({
+      userId: data.user?.id || null,
+      fullName: data.user?.user_metadata?.full_name || fullName || email.split('@')[0]
+    });
     setFormStatus(form, 'success', `Welcome back. Your wallet is now linked to ${resolvedUserId}.`);
     form.reset();
     submitButton.disabled = false;
@@ -870,6 +1100,17 @@ async function handleAuthSubmit(event) {
 
   const resolvedUserId = persistAuthState(email, role, fullName, data.user?.id || null);
   initializeWalletBalance(resolvedUserId, true);
+  await syncUserProfileToDatabase({
+    userId: data.user?.id || null,
+    email,
+    role,
+    fullName,
+    phone
+  });
+  await ensureUserWalletRecord({
+    userId: data.user?.id || null,
+    fullName
+  });
   setFormStatus(form, 'success', `Account created. Please check ${email} for a confirmation email. Your wallet ID is ${resolvedUserId}.`);
   form.reset();
   submitButton.disabled = false;

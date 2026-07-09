@@ -1,5 +1,15 @@
 create extension if not exists pgcrypto;
 
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  full_name text,
+  role text,
+  phone text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.wallets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
@@ -53,12 +63,20 @@ begin
 end;
 $$;
 
+alter table public.profiles enable row level security;
 alter table public.wallets enable row level security;
 alter table public.transactions enable row level security;
 
+drop policy if exists "Users can manage their own profile" on public.profiles;
 drop policy if exists "Users can read wallets for QR transfers" on public.wallets;
 drop policy if exists "Users can manage their own wallet" on public.wallets;
 drop policy if exists "Users can read their transactions" on public.transactions;
+
+create policy "Users can manage their own profile"
+on public.profiles for all
+to authenticated
+using (auth.uid() = id)
+with check (auth.uid() = id);
 
 create policy "Users can read wallets for QR transfers"
 on public.wallets for select

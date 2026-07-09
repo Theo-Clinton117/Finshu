@@ -972,6 +972,7 @@ button.choice-card {
 .qr-code {
   display: grid;
   grid-template-columns: repeat(var(--qr-size), 1fr);
+  grid-auto-rows: 1fr;
   gap: 2px;
   width: min(100%, 174px);
   aspect-ratio: 1;

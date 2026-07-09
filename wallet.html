@@ -11,11 +11,14 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="supabase-config.js"></script>
-    <script defer src="script.js"></script>
+    <script defer src="script.js?v=2"></script>
   </head>
   <body>
     <div class="page-shell wallet-shell">
@@ -77,18 +80,26 @@
         <section class="transfer-section" aria-label="Peer to peer QR transfer">
           <div class="section-heading compact-heading">
             <p class="eyebrow">QR transfers</p>
-            <h2>Send money by scanning a wallet code.</h2>
+            <h2>Scan a payment request QR to pay a driver.</h2>
           </div>
 
           <div class="transfer-grid">
             <article class="transfer-card receive-card">
               <div>
                 <p class="mini-label">Receive</p>
-                <h3>Your QR code</h3>
-                <p class="mini-copy">Show this code to another FinShu user so they can start a transfer.</p>
+                <h3>Payment request QR</h3>
+                <p class="mini-copy">Generate a payment request QR for a passenger to scan.</p>
               </div>
-              <div class="qr-code" data-receive-qr aria-label="Wallet QR code"></div>
+              <label class="field">
+                <span>Request amount</span>
+                <input data-request-amount type="number" min="0" step="50" placeholder="Optional" />
+              </label>
+              <div class="qr-code" data-receive-qr aria-label="Payment request QR code"></div>
               <p class="wallet-code" data-receive-code>Generating...</p>
+              <div class="receive-actions">
+                <button class="button secondary small-button" type="button" data-refresh-request>Refresh request</button>
+                <button class="button secondary small-button" type="button" data-receive-payment>Receive payment</button>
+              </div>
             </article>
 
             <article class="transfer-card send-card">
