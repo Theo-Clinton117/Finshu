@@ -208,8 +208,10 @@ function syncWalletFromSession() {
       const resolvedRole = metadata.role || localStorage.getItem('finshu-role') || 'commuter';
       const resolvedName = metadata.full_name || metadata.fullName || localStorage.getItem('finshu-display-name') || user.email?.split('@')[0] || 'FinShu user';
       persistAuthState(user.email || '', resolvedRole, resolvedName, user.id || null);
+      // Only re-render here, when session data has actually changed local state.
+      // The initial render already happened in initWalletExperience().
+      renderWalletState();
     }
-    renderWalletState();
   });
 }
 
@@ -769,69 +771,79 @@ function initPeerTransfers() {
     }
   };
 
-  manualScanButton.onclick = () => {
-    handleScannedValue(manualCodeInput?.value.trim());
-  };
+  if (manualScanButton) {
+    manualScanButton.onclick = () => {
+      // Reset scanHandled in case a previous camera-scan attempt errored out
+      // before it could reset the flag itself, which would otherwise cause
+      // this manual entry to silently no-op.
+      scanHandled = false;
+      handleScannedValue(manualCodeInput?.value.trim());
+    };
+  }
 
   if (qrTarget) {
     refreshPaymentRequest();
   }
 
-  stopScanButton.onclick = () => {
-    scanHandled = false;
-    stopCameraScanner();
-    if (status) {
-      status.className = 'form-status';
-      status.textContent = 'Scanner stopped.';
-    }
-  };
-
-  confirmButton.onclick = async () => {
-    if (!pendingTransfer) return;
-
-    const currentBalance = getWalletBalance();
-    if (pendingTransfer.amount > currentBalance) {
+  if (stopScanButton) {
+    stopScanButton.onclick = () => {
+      scanHandled = false;
+      stopCameraScanner();
       if (status) {
-        status.className = 'form-status error';
-        status.textContent = 'Insufficient balance for this transfer.';
+        status.className = 'form-status';
+        status.textContent = 'Scanner stopped.';
       }
+    };
+  }
+
+  if (confirmButton) {
+    confirmButton.onclick = async () => {
+      if (!pendingTransfer) return;
+
+      const currentBalance = getWalletBalance();
+      if (pendingTransfer.amount > currentBalance) {
+        if (status) {
+          status.className = 'form-status error';
+          status.textContent = 'Insufficient balance for this transfer.';
+        }
+        setTransferPanel(false);
+        return;
+      }
+
+      confirmButton.disabled = true;
+      if (status) {
+        status.className = 'form-status loading';
+        status.textContent = 'Processing transfer...';
+      }
+
+      const databaseResult = await persistTransferToDatabase(pendingTransfer);
+      setWalletBalance(currentBalance - pendingTransfer.amount);
+      setTransferHistory([
+        {
+          ...pendingTransfer,
+          createdAt: new Date().toISOString(),
+          source: databaseResult.ok ? 'database' : 'local'
+        },
+        ...getTransferHistory()
+      ]);
+
+      if (amountInput) amountInput.value = '';
+      if (noteInput) noteInput.value = '';
+      if (status) {
+        status.className = 'form-status success';
+        status.textContent = databaseResult.ok
+          ? 'Transfer processed instantly and saved to the database.'
+          : `Transfer processed locally. ${databaseResult.reason}`;
+      }
+
+      confirmButton.disabled = false;
+      pendingTransfer = null;
+      scanHandled = false;
       setTransferPanel(false);
-      return;
-    }
-
-    confirmButton.disabled = true;
-    if (status) {
-      status.className = 'form-status loading';
-      status.textContent = 'Processing transfer...';
-    }
-
-    const databaseResult = await persistTransferToDatabase(pendingTransfer);
-    setWalletBalance(currentBalance - pendingTransfer.amount);
-    setTransferHistory([
-      {
-        ...pendingTransfer,
-        createdAt: new Date().toISOString(),
-        source: databaseResult.ok ? 'database' : 'local'
-      },
-      ...getTransferHistory()
-    ]);
-
-    if (amountInput) amountInput.value = '';
-    if (noteInput) noteInput.value = '';
-    if (status) {
-      status.className = 'form-status success';
-      status.textContent = databaseResult.ok
-        ? 'Transfer processed instantly and saved to the database.'
-        : `Transfer processed locally. ${databaseResult.reason}`;
-    }
-
-    confirmButton.disabled = false;
-    pendingTransfer = null;
-    scanHandled = false;
-    setTransferPanel(false);
-    renderWalletState();
-    renderTransferHistory();
-  };
+      renderWalletState();
+      renderTransferHistory();
+    };
+  }
 
   cancelButtons.forEach((button) => {
     button.onclick = () => {
@@ -1159,4 +1171,3 @@ if (authForms.length) {
 
 initTheme();
 initMobileSidebar();
-initWalletExperience();
